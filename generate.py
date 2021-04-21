@@ -30,7 +30,7 @@ parser.add_argument('--checkpoint', default='checkpoints/vctk/lastmodel.pth',
                     type=str, help='Model used for generation.')
 parser.add_argument('--gpu', default=-1,
                     type=int, help='GPU device ID, use -1 for CPU.')
-
+parser.add_argument('--output', type=str, help='output file path without extension')
 
 # init
 args = parser.parse_args()
@@ -117,8 +117,6 @@ def main():
         feat = Variable(feat.unsqueeze(1), volatile=True)
         spkr = Variable(torch.LongTensor([args.spkr]), volatile=True)
 
-        fname = os.path.basename(args.npz)[:-4]
-        output_fname = fname + '.gen_' + str(args.spkr)
     elif args.text is not '':
         txt = text2phone(args.text, char2code)
         feat = torch.FloatTensor(txt.size(0)*20, 63)
@@ -128,12 +126,6 @@ def main():
         feat = Variable(feat.unsqueeze(1), volatile=True)
         spkr = Variable(spkr, volatile=True)
 
-        # slugify input string to file name
-        fname = args.text.replace(' ', '_')
-        valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-        fname = ''.join(c for c in fname if c in valid_chars)
-
-        output_fname = fname + '.gen_' + str(args.spkr)
     else:
         print('ERROR: Must supply npz file path or text as source.')
         return
@@ -147,7 +139,9 @@ def main():
     out, attn = model([txt, spkr], feat)
     out, attn = trim_pred(out, attn)
 
-    output_dir = os.path.join(os.path.dirname(args.checkpoint), 'results')
+
+    output_dir = os.path.dirname(args.output)
+    output_fname = os.path.basename(args.output)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
